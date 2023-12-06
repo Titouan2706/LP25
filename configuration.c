@@ -4,7 +4,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <string.h>
-//thomas
+
 typedef enum {DATE_SIZE_ONLY, NO_PARALLEL} long_opt_values;
 
 /*!
