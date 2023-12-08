@@ -39,6 +39,14 @@ files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
  * @return 0 in case of success, -1 else
  */
 int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
+    // Ajouter la verification si la fonction se déroule bien
+    if (list->tail == NULL) { // List est vide
+        return -1;
+    } else {
+        entry->prev = list->tail; // Ajout du chemin vers le précédent
+        list->tail->next = entry; // Ajout du chemin vers la queue
+        return 0;
+    }
 }
 
 /*!
