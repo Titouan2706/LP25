@@ -59,7 +59,7 @@ int set_configuration(configuration_t *the_config, int argc, char *argv[]) {
                 } else if (strcmp(argv[i], "--dry-run") == 0) {
                     the_config->is_dry_run = 1; // On ne copie pas les fichiers
                 } else {
-                    // cas argv[i] = "-n <nombre>"
+                    // cas argv[i] = "-n <nombre>" a faire
                     return -1; // Un des arguments n'est pas correct
                 }
             }
