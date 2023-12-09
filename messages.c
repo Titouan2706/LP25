@@ -14,6 +14,12 @@
  * Used by the specialized functions send_analyze*
  */
 int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry, int cmd_code) {
+  int result = msgsnd(msg_queue, file_entry, sizeof(files_list_entry_t), 0);
+  if (result == -1) {
+      perror("msgsnd failed");
+      return -1;
+  }
+  return result;
 }
 
 /*!
