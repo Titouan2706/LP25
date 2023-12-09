@@ -27,9 +27,6 @@ void display_help(char *my_name) {
  * @param the_config is a pointer to the configuration to be initialized
  */
 void init_configuration(configuration_t *the_config) {
-    strcpy(the_config->destination,NULL);
-    strcpy(the_config->source,NULL);
-
 }
 
 /*!
