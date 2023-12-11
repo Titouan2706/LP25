@@ -28,7 +28,7 @@ void display_help(char *my_name) {
  * @brief init_configuration initializes the configuration with default values
  * @param the_config is a pointer to the configuration to be initialized
  */
-void init_configuration(configuration_t *the_config) {
+void init_configuration(configuration_t *the_config) { // Initialise les paramètres par défaut
     the_config->is_parallel = 1; // TRUE
     the_config->is_dry_run = 0; // FALSE
     the_config->is_verbose = 0; // FALSE
@@ -45,7 +45,6 @@ void init_configuration(configuration_t *the_config) {
  */
 int set_configuration(configuration_t *the_config, int argc, char *argv[]) {
     if (argc > 8 || argc < 3) { // Teste si le bon nombre d'arguments sont passés en paramètres
-        printf("ERREUR: nombre d'arguments incorrects (%d)\n", argc);
         return -1;
     } else {
         if (argc != 3) {
