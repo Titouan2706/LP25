@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef enum {DATE_SIZE_ONLY, NO_PARALLEL} long_opt_values;
+typedef enum {DATE_SIZE_ONLY, NO_PARALLEL, DRY_RUN} long_opt_values;
 
 /*!
  * @brief function display_help displays a brief manual for the program usage
@@ -45,25 +45,41 @@ void init_configuration(configuration_t *the_config) { // Initialise les paramè
  */
 int set_configuration(configuration_t *the_config, int argc, char *argv[]) {
     if (argc > 8 || argc < 3) { // Teste si le bon nombre d'arguments sont passés en paramètres
-        return -1;
+        return -1; // Nombre d'argument incorrecte
     } else {
-        if (argc != 3) {
-            for (int i = 3; i <= argc; ++i) { // Parcours les autres arguments pour les options
-                if (strcmp(argv[i], "--date-size-only") == 0) {
-                    the_config->uses_md5 = 0; // On utilise pas la somme md5
-                } else if (strcmp(argv[i], "--no-parallel") == 0) {
-                    the_config->is_parallel = 0; // On utilise un seul processus pour tout le programme
-                } else if (strcmp(argv[i], "-v") == 0) {
-                    the_config->is_verbose = 1; // On affiche ce que le programme fait
-                } else if (strcmp(argv[i], "--dry-run") == 0) {
-                    the_config->is_dry_run = 1; // On ne copie pas les fichiers
-                } else {
-                    // cas argv[i] = "-n <nombre>" a faire
-                    return -1; // Un des arguments n'est pas correct
+        strcpy(the_config->source, argv[1]); // argv[1] correspond au numéro d'argument de la source
+        strcpy(the_config->destination, argv[2]); // argv[2] correspond au numéro d'argument de la destination
+        if (argc != 3) { // D'autres arguments donnés que la source et la destination
+            int opt;
+            struct option long_options[] = {
+                    {"date-size-only", no_argument, NULL, DATE_SIZE_ONLY}, // Option longue pour ne pas utiliser la sommme MD5
+                    {"no-parallel", no_argument, NULL, NO_PARALLEL}, // Option longue pour ne pas utiliser de processus en parallèls
+                    {"dry-run", no_argument, NULL, DRY_RUN}, // Option longue pour executer un test (pas de copie des fichiers)
+                    {0, 0, 0, 0} // ligne obligatoire pour getopt_long
+            };
+
+            while ((opt = getopt_long(argc, argv, "n:v", long_options, NULL)) != -1) { // Verifie qu'il reste des arguments à analyser
+                switch (opt) { // en fonction des options
+                    case 'n': // -n <nombre> : nombre de processus
+                        the_config->processes_count = atoi(optarg);
+                        break;
+                    case 'v': // verbeux
+                        the_config->is_verbose = true;
+                        break;
+                    case DRY_RUN:
+                        the_config->is_dry_run = true;
+                        break;
+                    case DATE_SIZE_ONLY:
+                        the_config->uses_md5 = false;
+                        break;
+                    case NO_PARALLEL:
+                        the_config->is_parallel = false;
+                        break;
+                    default: // Cas ou une des options ne correspond pas aux options possibles (getopt_long retourne quelque chose qui ne rentre dans aucun cas)
+                        return -1; // Fin de la fonction avec erreur
                 }
             }
-        } else {
-            return 0; // Pas de problèmes rencontrés
         }
+        return 0; // Execution finie et pas d'erreur rencontrées
     }
 }
