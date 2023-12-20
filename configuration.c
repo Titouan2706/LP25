@@ -29,11 +29,11 @@ void display_help(char *my_name) {
  * @param the_config is a pointer to the configuration to be initialized
  */
 void init_configuration(configuration_t *the_config) { // Initialise les paramètres par défaut
-    the_config->is_parallel = 1; // TRUE
-    the_config->is_dry_run = 0; // FALSE
-    the_config->is_verbose = 0; // FALSE
-    the_config->uses_md5 = 1; // TRUE
-    the_config->processes_count = 1; // A DEFINIR LE NOMBRE
+    the_config->is_parallel = true;
+    the_config->is_dry_run = false;
+    the_config->is_verbose = false;
+    the_config->uses_md5 = true;
+    the_config->processes_count = 1;
 }
 
 /*!
