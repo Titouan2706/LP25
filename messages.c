@@ -14,7 +14,14 @@
  * Used by the specialized functions send_analyze*
  */
 int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry, int cmd_code) {
-  int result = msgsnd(msg_queue, file_entry, sizeof(files_list_entry_t), 0);
+  //Créer message
+  message_t message;
+  message.mtype = recipient;
+  message.cmd_code = cmd_code;
+  memcpy(&message.file_entry, file_entry, sizeof(files_list_entry_t));
+  //Envoyer message
+  int result = msgsnd(msg_queue, &message, sizeof(message_t) - sizeof(long), 0);
+  //Si erreur
   if (result == -1) {
       perror("msgsnd failed");
       return -1;
