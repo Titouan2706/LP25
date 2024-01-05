@@ -1,4 +1,3 @@
-// THOMAS S
 
 #include <configuration.h>
 #include <stddef.h>
@@ -45,10 +44,11 @@ void init_configuration(configuration_t *the_config) { // Initialise les paramè
  */
 int set_configuration(configuration_t *the_config, int argc, char *argv[]) {
     if (argc > 8 || argc < 3) { // Teste si le bon nombre d'arguments sont passés en paramètres
+        display_help("lp25-backup"); // Affichage de l'aide
         return -1; // Nombre d'argument incorrecte
     } else {
-        strcpy(the_config->source, argv[1]); // argv[1] correspond au numéro d'argument de la source
-        strcpy(the_config->destination, argv[2]); // argv[2] correspond au numéro d'argument de la destination
+        strcpy(the_config->source, argv[argc-2]); // -2 car avant-dernier élément
+        strcpy(the_config->destination, argv[argc-1]); // -1 car dernier élément
         if (argc != 3) { // D'autres arguments donnés que la source et la destination
             int opt;
             struct option long_options[] = {
@@ -76,9 +76,16 @@ int set_configuration(configuration_t *the_config, int argc, char *argv[]) {
                         the_config->is_parallel = false;
                         break;
                     default: // Cas ou une des options ne correspond pas aux options possibles (getopt_long retourne quelque chose qui ne rentre dans aucun cas)
+                        if (the_config->is_verbose == true) {
+                            printf("Initialisation process failed\n");
+                        }
+                        display_help("lp25-backup"); // Affichage de l'aide
                         return -1; // Fin de la fonction avec erreur
                 }
             }
+        }
+        if (the_config->is_verbose == true) {
+            printf("Initialisation process succeed\n");
         }
         return 0; // Execution finie et pas d'erreur rencontrées
     }
