@@ -8,6 +8,7 @@
 
 typedef enum {DATE_SIZE_ONLY, NO_PARALLEL, DRY_RUN} long_opt_values;
 
+
 /*!
  * @brief function display_help displays a brief manual for the program usage
  * @param my_name is the name of the binary file
@@ -23,6 +24,7 @@ void display_help(char *my_name) {
     printf("         \t-v enables verbose mode\n");
 }
 
+
 /*!
  * @brief init_configuration initializes the configuration with default values
  * @param the_config is a pointer to the configuration to be initialized
@@ -34,6 +36,7 @@ void init_configuration(configuration_t *the_config) { // Initialise les paramè
     the_config->uses_md5 = true;
     the_config->processes_count = 1;
 }
+
 
 /*!
  * @brief set_configuration updates a configuration based on options and parameters passed to the program CLI
