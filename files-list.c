@@ -123,6 +123,7 @@ int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
 }
 
 
+
 /*!
  *  @brief find_entry_by_name looks up for a file in a list
  *  The function uses the ordering of the entries to interrupt its search
