@@ -147,13 +147,15 @@ files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path, size
         size_t i = start_of_src; // Deux variables pour parcourir les chemins du fichier cherché et de ceux de la liste
         size_t j = start_of_dest;
 
-        while (i < sizeof(temp->path_and_name) && j < file_path_length) {
-            char list_char = temp->path_and_name[i+1]; // incrémentation des caractères des chemin comparés
-            char search_char = file_path[j+1];
+        while (i < strlen(temp->path_and_name) && j < file_path_length) {
+            char list_char = temp->path_and_name[i]; // incrémentation des caractères des chemin comparés
+            char search_char = file_path[j];
 
             if (list_char != search_char) { // Le caractère du chemin d'un fichier de la liste est différent de celui du chemin du fichier cherché
                 break; // On sort de la boucle
             }
+            i++;
+            j++;
         }
 
         if (i - start_of_src == file_path_length - start_of_dest) { // Vérifie si on a atteind la fin du chemin ou si deux caractères sont différents
