@@ -55,6 +55,7 @@ int send_analyze_dir_command(int msg_queue, int recipient, char *target_dir) {
  * Calls send_file_entry function
  */
 int send_analyze_file_command(int msg_queue, int recipient, files_list_entry_t *file_entry) {
+  return send_file_entry(msg_queue, recipient, file_entry, ANALYZE_FILE_CMD);
 }
 
 /*!
@@ -66,6 +67,7 @@ int send_analyze_file_command(int msg_queue, int recipient, files_list_entry_t *
  * Calls send_file_entry function
  */
 int send_analyze_file_response(int msg_queue, int recipient, files_list_entry_t *file_entry) {
+  return send_file_entry(msg_queue, recipient, file_entry, ANALYZE_FILE_RESPONSE);
 }
 
 /*!
@@ -77,6 +79,7 @@ int send_analyze_file_response(int msg_queue, int recipient, files_list_entry_t 
  * Calls send_file_entry function
  */
 int send_files_list_element(int msg_queue, int recipient, files_list_entry_t *file_entry) {
+  return send_file_entry(msg_queue, recipient, file_entry, FILES_LIST_ELEMENT);
 }
 
 /*!
@@ -86,6 +89,12 @@ int send_files_list_element(int msg_queue, int recipient, files_list_entry_t *fi
  * @return the result of msgsnd
  */
 int send_list_end(int msg_queue, int recipient) {
+  //Créer message fin de liste
+  message_t msg;
+  msg.mtype = recipient;
+  msg.cmd_code = LIST_END_CMD;
+  //Envoyer message
+  return msgsnd(msg_queue, &msg, sizeof(message_t) - sizeof(long), 0);
 }
 
 /*!
@@ -95,6 +104,12 @@ int send_list_end(int msg_queue, int recipient) {
  * @return the result of msgsnd
  */
 int send_terminate_command(int msg_queue, int recipient) {
+  //Créer message
+  message_t msg;
+  msg.mtype = recipient;
+  msg.cmd_code = TERMINATE_CMD;
+  //Envoyer message
+  return msgsnd(msg_queue, &msg, sizeof(message_t) - sizeof(long), 0);
 }
 
 /*!
@@ -104,4 +119,10 @@ int send_terminate_command(int msg_queue, int recipient) {
  * @return the result of msgsnd
  */
 int send_terminate_confirm(int msg_queue, int recipient) {
+  //Créer message pour confirmation
+  message_t msg;
+  msg.mtype = recipient;
+  msg.cmd_code = TERMINATE_CONFIRM;
+  //Envoyer message
+  return msgsnd(msg_queue, &msg, sizeof(message_t) - sizeof(long), 0);
 }
