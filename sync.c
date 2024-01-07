@@ -43,8 +43,10 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
     }
 
     //3 - Vérification des différences : parcourir la liste des sources et synchroniser les fichiers
+
     files_list_entry_t *current_entry = source_list.head;
     files_list_entry_t *current_dest; //= dest_list.head;  Définie autrement après
+
     while (current_entry != NULL) {
         // Trouver l'entrée correspondante dans la liste de destination
         files_list_entry_t *current_dest = find_entry_by_name(&dest_list, current_entry->path_and_name, 0 ,0);
@@ -122,6 +124,7 @@ bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, bool has_md5) {
             return etat_comparaison;
         }
     }
+    return false;
 }
 
 
@@ -216,40 +219,58 @@ void make_files_list(files_list_t *list, char *target_path) {
  * @param msg_queue is the id of the MQ used for communication
  */
 void make_files_lists_parallel(files_list_t *src_list, files_list_t *dst_list, configuration_t *the_config, int msg_queue) {
-    if (the_config->is_parallel) {
-        // Préparer les processus
-        process_context_t p_context;
-        if (prepare(the_config, &p_context) == -1) {
-            printf("Erreur lors de la préparation des processus.\n");
-            exit(EXIT_FAILURE);
+
+    any_message_t msg;
+    //Envoie des messages au listeur
+    if(the_config->is_verbose==true){
+        printf("Envoie d'un message a chaque processus listeur\n");
+    }
+    send_analyze_dir_command(msg_queue,MSG_TYPE_TO_SOURCE_LISTER,the_config->source);
+    send_analyze_dir_command(msg_queue,MSG_TYPE_TO_DESTINATION_LISTER,the_config->destination);
+
+    bool list_source_complete= false;
+    bool list_destination_complete=false;
+    //Boucle de reception de message avec les fichiers analysés jusqu'à ce que les deux listes soit terminé
+    if(the_config->is_verbose==true){
+        printf("Début de la boucle de reception de message\n");
+    }
+    do{
+        msgrcv(msg_queue,&msg, sizeof(any_message_t)- sizeof(long),MSG_TYPE_TO_MAIN,0);
+
+        if (msg.list_entry.op_code==COMMAND_CODE_FILE_ENTRY_FOR_SOURCE){
+            if(the_config->is_verbose==true){
+                printf("Reception d'une entree de la source\n");
+            }
+            files_list_entry_t* new_entry= malloc(sizeof(files_list_entry_t));
+            memcpy(new_entry,&msg.list_entry.payload, sizeof(files_list_entry_t));
+            if(the_config->is_verbose==true){
+                printf("Ajout de la nouvelle entree a la liste source\n");
+            }
+            add_entry_to_tail(src_list,new_entry);
+        }else if (msg.list_entry.op_code==COMMAND_CODE_LIST_COMPLETE_FOR_SOURCE){
+            if(the_config->is_verbose==true){
+                printf("Reception du message de fin de liste pour la source\n");
+            }
+            list_source_complete=true;
+        }else if (msg.list_entry.op_code==COMMAND_CODE_FILE_ENTRY_FOR_DESTINATION) {
+            if(the_config->is_verbose==true){
+                printf("Reception d'une entree de la destination\n");
+            }
+            files_list_entry_t *new_entry = malloc(sizeof(files_list_entry_t));
+            memcpy(new_entry, &msg.list_entry.payload, sizeof(files_list_entry_t));
+            if(the_config->is_verbose==true){
+                printf("Ajout de la nouvelle entree a la liste destination\n");
+            }
+            add_entry_to_tail(dst_list, new_entry);
+        }else if (msg.list_entry.op_code==COMMAND_CODE_LIST_COMPLETE_FOR_DESTINATION){
+            if(the_config->is_verbose==true){
+                printf("Reception du message de fin de lsite pour la destination\n");
+            }
+            list_destination_complete=true;
         }
-
-        // Créer un processus pour la liste source
-        pid_t src_pid = fork();
-        if (src_pid == -1) {
-            printf("Erreur lors de la création du processus pour la liste source.\n");
-            exit(EXIT_FAILURE);
-        } else if (src_pid == 0) {  // Processus fils
-            make_files_list(src_list, the_config->source);
-            exit(EXIT_SUCCESS);
-        }
-
-        // Créer un processus pour la liste destination
-        pid_t dst_pid = fork();
-        if (dst_pid == -1) {
-            perror("Erreur lors de la création du processus pour la liste destination.\n");
-            exit(EXIT_FAILURE);
-        } else if (dst_pid == 0) {  // Processus fils
-            make_files_list(dst_list, the_config->destination);
-            exit(EXIT_SUCCESS);
-        }
-
-        // Attendre la fin des processus fils
-        waitpid(src_pid, NULL, 0);
-        waitpid(dst_pid, NULL, 0);
-
-        // Nettoyer les processus à la fin de l'execution
-        clean_processes(the_config, &p_context);
+    }while (list_source_complete==false || list_destination_complete==false);
+    if(the_config->is_verbose==true){
+        printf("Fin de la creation des listes en parallel\n");
     }
 }
 

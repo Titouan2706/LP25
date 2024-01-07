@@ -1,4 +1,4 @@
-#include "file-properties.h"
+#include <file-properties.h>
 
 #include <sys/stat.h>
 #include <dirent.h>
@@ -6,10 +6,10 @@
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
-#include "defines.h"
+#include <defines.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include "utility.h"
+#include <utility.h>
 
 /*!
  * @brief get_file_stats gets all of the required information for a file (inc. directories)
@@ -45,6 +45,7 @@ int get_file_stats(files_list_entry_t *entry) {
                 //Métadonnées fichier
                 pointeur->mtime.tv_sec = buffer_type.st_mtim.tv_sec;
                 pointeur->mtime.tv_nsec = buffer_type.st_mtim.tv_nsec;
+
                 pointeur->size = buffer_type.st_size;
 
                 //Permissions fichier
@@ -122,9 +123,10 @@ int compute_file_md5(files_list_entry_t *entry) {
 
     // Convertir la somme MD5 en format hexadécimal
     for (unsigned int i = 0; i < md_len; i++) {
-        sprintf(&md5sum[i * 2], "%02x", md_value[i]);
+        sprintf(&entry->md5sum[i * 2], "%02x", md_value[i]);
     }
-    md5sum[md_len * 2] = '\0';
+    entry->md5sum[md_len * 2] = '\0';
+    return 0;
 }
 
 
@@ -159,40 +161,44 @@ bool directory_exists(char *path_to_dir) {
  * Hint: try to open a file in write mode in the target directory.
  */
 bool is_directory_writable(char *path_to_dir) {
-    //Ouverture du répertoire
-    DIR *directory = opendir(path_to_dir);
+
 
     //Définition du fichier à ouvrir
     struct dirent *entry;
     char chemin_abs_fichier[4096];
 
+
+    struct dirent *entry; // Variables nécessaires au bon fonctionnement de la fonction
+    char chemin_abs_fichier[255];
     bool sur_fichier_exploitable = false;
-    while (! sur_fichier_exploitable) {
-        //Enregistrement de 1 fichier
+
+    while (!sur_fichier_exploitable) {
+
         entry = readdir(directory);
+        if (entry == NULL) {
+            // End of directory reached
+            break;
+        }
 
-        // Ignorer les répertoires spéciaux "." et ".."
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) { // On ignore les dossiers spéciaux "." and ".."
             continue;
         }
 
-        // Construire le chemin complet du fichier
-        snprintf(chemin_abs_fichier, sizeof(chemin_abs_fichier), "%s/%s", path_to_dir, entry->d_name);
+        snprintf(chemin_abs_fichier, sizeof(chemin_abs_fichier), "%s/%s", path_to_dir, entry->d_name); // Construction du chemin absolu
 
-        //Obtenir les informations sur le fichier
         struct stat file_stat;
-        if (stat(chemin_abs_fichier, &file_stat) != 0) {
-            printf("Erreur lors de la récupération des informations sur le fichier");
+        if (stat(chemin_abs_fichier, &file_stat) != 0) { // Appel de stat pour obtenir des informations
+            perror("Error getting file information");
             continue;
         }
 
-        // Vérifier si le fichier est bien un fichier ordinaire
-        if (! S_ISREG(file_stat.st_mode)) {
-            continue;
-        } else {
+
+        if (S_ISREG(file_stat.st_mode)) { // Si fichier ordinaire
             sur_fichier_exploitable = true;
         }
     }
+
 
     // Ouvrir ce fichier
     FILE *file = fopen(chemin_abs_fichier, "w");
@@ -206,15 +212,8 @@ bool is_directory_writable(char *path_to_dir) {
         //Fermeture du répertoire (à ne pas oublier aussi !)
         closedir(directory);
 
-        return false;
-    } else {
-        //Le fichier est rédigeable, donc le répertoire est bien en mode writable
 
-        //Fermeture du ficher (à ne pas oublier !)
-        fclose(file);
-        //Fermeture du répertoire (à ne pas oublier aussi !)
-        closedir(directory);
+    closedir(directory); // Fermeture du répertoire ouvert
 
-        return true;
-    }
+    return sur_fichier_exploitable;
 }
