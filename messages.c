@@ -14,6 +14,7 @@
  * Used by the specialized functions send_analyze*
  */
 int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry, int cmd_code) {
+
     //Créer message
     any_message_t message;
     message.list_entry.mtype = recipient;
@@ -28,6 +29,7 @@ int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry
         return -1;
     }
     return result;
+
 }
 
 /*!
@@ -42,7 +44,7 @@ int send_analyze_dir_command(int msg_queue, int recipient, char *target_dir) {
     command.mtype = recipient;
     strcpy(command.target, target_dir);
     command.op_code=COMMAND_CODE_ANALYZE_DIR;
-    return msgsnd(msg_queue, &command, sizeof(analyze_dir_command_t) - sizeof(long), 0);
+    return msgsnd(msg_queue, &command, sizeof(analyze_dir_command_t) - sizeof(long), 0); 
 }
 
 // The 3 following functions are one-liners

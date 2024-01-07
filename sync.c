@@ -255,8 +255,14 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
     snprintf(source_path, MAX_PATH_SIZE, "%s/%s", the_config->source, source_entry->path_and_name);
     snprintf(destination_path, MAX_PATH_SIZE, "%s/%s", the_config->destination, source_entry->path_and_name);
 
+    struct stat buffer_type;
+    stat(source_entry->path_and_name, &buffer_type);
+    if (&buffer_type != NULL) {                         //Si erreur avec le fichier dans le buffer
+        printf("Erreur lors de l'obtention des stats du fichier.");
+    }
+
     //Test type du fichier donné
-    if (S_ISDIR(source_entry->mode)) {              //Le fichier est un répertoire
+    if (S_ISDIR(buffer_type.st_mode)) {              //Le fichier est un répertoire
         //Création d'un répertoire dans la destination
         int retour_mkdir = mkdir(destination_path, source_entry->mode);
 
@@ -264,7 +270,7 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
             printf("Erreur lors de la création du répertoire copie.");
             return;
         }
-    } else if (S_ISREG(source_entry->mode)) {       //Le fichier est un fichier ordinaire
+    } else if (S_ISREG(buffer_type.st_mode)) {       //Le fichier est un fichier ordinaire
         //Ouverture du fichier source
         FILE *source_file = fopen(source_path, "rb");
         if (source_file == NULL) {
@@ -347,14 +353,21 @@ DIR *open_dir(char *path) {
  * Relevant entries are all regular files and dir, except . and ..
  */
 struct dirent *get_next_entry(DIR *dir) {
-    struct dirent *fichier_entree = readdir(dir);
+    struct dirent *fichier_entree;
+    struct stat buffer_type;
 
-    // Ignorer les répertoires spéciaux "." et ".."
-    while (strcmp(fichier_entree->d_name, ".") == 0 || strcmp(fichier_entree->d_name, "..") == 0) {
+
+    do {
         fichier_entree = readdir(dir);
-    }
 
-    //Vérification du type du fichier dans la fonction appelante.
+        stat(fichier_entree->d_name, &buffer_type);
+        if (&buffer_type != NULL) {                         //Si erreur avec le fichier dans le buffer
+            printf("Erreur lors de l'obtention des stats du fichier.");
+            continue;
+        }
+    } while (strcmp(fichier_entree->d_name, ".") == 0 || strcmp(fichier_entree->d_name, "..") == 0 || (!(S_ISREG(buffer_type.st_mode)) && (!(S_ISDIR(buffer_type.st_mode)))));
+    // Ignorer les répertoires spéciaux "." et ".." + Vérification du type du fichier dans la fonction appelante.
+    //Si fichier non conforme, on relit une nouvelle entrée et on reprend ces informations.
 
     return fichier_entree;
 }
