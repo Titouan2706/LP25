@@ -136,4 +136,4 @@ int send_terminate_confirm(int msg_queue, int recipient) {
     msg.simple_command.message = COMMAND_CODE_TERMINATE_OK;
     //Envoyer message
     return msgsnd(msg_queue, &msg, sizeof(simple_command_t) - sizeof(long), 0);
-}}
+}

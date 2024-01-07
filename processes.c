@@ -190,3 +190,4 @@ void clean_processes(configuration_t *the_config, process_context_t *p_context) 
         printf("Error for cleaning processes");
     }
 }
+
