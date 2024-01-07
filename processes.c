@@ -20,7 +20,7 @@ int prepare(configuration_t *the_config, process_context_t *p_context) {
         if(the_config->is_verbose==true){
             printf("Creation de la MSQ_Key");
         }
-        p_context->shared_key= ftok("LP25_project",49);
+        p_context->shared_key= ftok("lp25-backup",49);
         if (p_context->shared_key==-1){
             printf("Erreur avec la MQKey");
             return -1;
