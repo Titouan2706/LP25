@@ -14,6 +14,7 @@
  * Function is already provided with full implementation, you **shall not** modify it.
  */
 int main(int argc, char *argv[]) {
+
     // Check parameters:
     // - source and destination are provided
     // - source exists and can be read
@@ -24,12 +25,13 @@ int main(int argc, char *argv[]) {
     if (set_configuration(&my_config, argc, argv) == -1) {
         return -1;
     }
-
+    printf("test_main");
     // Check directories
     if (!directory_exists(my_config.source) || !directory_exists(my_config.destination)) {
         printf("Either source or destination directory do not exist\nAborting\n");
         return -1;
     }
+
     // Is destination writable?
     if (!is_directory_writable(my_config.destination)) {
         printf("Destination directory %s is not writable\n", my_config.destination);
@@ -38,10 +40,12 @@ int main(int argc, char *argv[]) {
 
     // Prepare (fork, MQ) if parallel
     process_context_t processes_context;
-    prepare(&my_config, &processes_context);
+    if (prepare(&my_config, &processes_context)==-1){
+        return -1;
+    }
 
     // Run synchronize:
-    synchronize(&my_config, &processes_context);
+    //synchronize(&my_config, &processes_context);
     
     // Clean resources
     clean_processes(&my_config, &processes_context);

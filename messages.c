@@ -1,6 +1,7 @@
 #include <messages.h>
 #include <sys/msg.h>
 #include <string.h>
+#include <stdio.h>
 
 // Functions in this file are required for inter processes communication
 

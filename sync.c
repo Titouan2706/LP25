@@ -43,7 +43,7 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
 
     //3 - Vérification des différences : parcourir la liste des sources et synchroniser les fichiers
     files_list_entry_t *current_entry = source_list->head;
-    files_list_entry_t *current_dest; //= dest_list.head;  Définie autrement après
+    //files_list_entry_t *current_dest; //= dest_list.head;  Définie autrement après
     while (current_entry != NULL) {
         // Trouver l'entrée correspondante dans la liste de destination
         files_list_entry_t *current_dest = find_entry_by_name(dest_list, current_entry->path_and_name, 0 ,0);
@@ -102,6 +102,7 @@ bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, bool has_md5) {
             }
         }
     }
+    return false;
 }
 
 
@@ -190,7 +191,7 @@ void make_files_lists_parallel(files_list_t *src_list, files_list_t *dst_list, c
     any_message_t msg;
     //Envoie des messages au listeur
     if(the_config->is_verbose==true){
-        printf("Envoie d'un message a chaque processus listeur");
+        printf("Envoie d'un message a chaque processus listeur\n");
     }
     send_analyze_dir_command(msg_queue,MSG_TYPE_TO_SOURCE_LISTER,the_config->source);
     send_analyze_dir_command(msg_queue,MSG_TYPE_TO_DESTINATION_LISTER,the_config->destination);
