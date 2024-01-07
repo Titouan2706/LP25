@@ -14,19 +14,22 @@
  * Used by the specialized functions send_analyze*
  */
 int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry, int cmd_code) {
-  //Créer message
-  message_t message;
-  message.mtype = recipient;
-  message.cmd_code = cmd_code;
-  memcpy(&message.file_entry, file_entry, sizeof(files_list_entry_t));
-  //Envoyer message
-  int result = msgsnd(msg_queue, &message, sizeof(message_t) - sizeof(long), 0);
-  //Si erreur
-  if (result == -1) {
-      perror("msgsnd failed");
-      return -1;
-  }
-  return result;
+
+    //Créer message
+    any_message_t message;
+    message.list_entry.mtype = recipient;
+    message.list_entry.op_code = cmd_code;
+    memcpy(&message.list_entry.payload, file_entry, sizeof(files_list_entry_t));
+    message.list_entry.reply_to=msg_queue;
+    //Envoyer message
+    int result = msgsnd(msg_queue, &message, sizeof(any_message_t) - sizeof(long), 0);
+    //Si erreur
+    if (result == -1) {
+        perror("msgsnd failed");
+        return -1;
+    }
+    return result;
+
 }
 
 /*!
@@ -37,11 +40,11 @@ int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry
  * @return the result of msgsnd
  */
 int send_analyze_dir_command(int msg_queue, int recipient, char *target_dir) {
-  simple_command_t command;
-  command.mtype = recipient;
-  command.message = 'a';
-  strcpy(command.message + 1, target_dir);
-  return msgsnd(msg_queue, &command, sizeof(simple_command_t) - sizeof(long), 0);
+    analyze_dir_command_t command;
+    command.mtype = recipient;
+    strcpy(command.target, target_dir);
+    command.op_code=COMMAND_CODE_ANALYZE_DIR;
+    return msgsnd(msg_queue, &command, sizeof(analyze_dir_command_t) - sizeof(long), 0); 
 }
 
 // The 3 following functions are one-liners
@@ -55,7 +58,7 @@ int send_analyze_dir_command(int msg_queue, int recipient, char *target_dir) {
  * Calls send_file_entry function
  */
 int send_analyze_file_command(int msg_queue, int recipient, files_list_entry_t *file_entry) {
-  return send_file_entry(msg_queue, recipient, file_entry, ANALYZE_FILE_CMD);
+    return send_file_entry(msg_queue, recipient, file_entry, COMMAND_CODE_ANALYZE_FILE);
 }
 
 /*!
@@ -67,7 +70,7 @@ int send_analyze_file_command(int msg_queue, int recipient, files_list_entry_t *
  * Calls send_file_entry function
  */
 int send_analyze_file_response(int msg_queue, int recipient, files_list_entry_t *file_entry) {
-  return send_file_entry(msg_queue, recipient, file_entry, ANALYZE_FILE_RESPONSE);
+    return send_file_entry(msg_queue, recipient, file_entry, COMMAND_CODE_FILE_ANALYZED);
 }
 
 /*!
@@ -75,26 +78,36 @@ int send_analyze_file_response(int msg_queue, int recipient, files_list_entry_t 
  * @param msg_queue the MQ identifier through which to send the entry
  * @param recipient is the id of the recipient (as specified by mtype)
  * @param file_entry is a pointer to the entry to send (must be copied)
+ * @param S_or_D a caractere to now if it's the source or destination list
  * @return the result of the send_file_entry function
  * Calls send_file_entry function
  */
-int send_files_list_element(int msg_queue, int recipient, files_list_entry_t *file_entry) {
-  return send_file_entry(msg_queue, recipient, file_entry, FILES_LIST_ELEMENT);
+int send_files_list_element(int msg_queue, int recipient, files_list_entry_t *file_entry,char S_or_D) {
+    if(S_or_D=='S') {
+        return send_file_entry(msg_queue,recipient,file_entry,COMMAND_CODE_FILE_ENTRY_FOR_SOURCE);
+    }else{
+     return send_file_entry(msg_queue,recipient,file_entry,COMMAND_CODE_FILE_ENTRY_FOR_DESTINATION);
+    }
 }
 
 /*!
  * @brief send_list_end sends the end of list message to the main process
  * @param msg_queue is the id of the MQ used to send the message
  * @param recipient is the destination of the message
+ * @param S_or_D a caractere to now if it's the source or destination list
  * @return the result of msgsnd
  */
-int send_list_end(int msg_queue, int recipient) {
-  //Créer message fin de liste
-  message_t msg;
-  msg.mtype = recipient;
-  msg.cmd_code = LIST_END_CMD;
-  //Envoyer message
-  return msgsnd(msg_queue, &msg, sizeof(message_t) - sizeof(long), 0);
+int send_list_end(int msg_queue, int recipient,char S_or_D) {
+    //Créer message fin de liste
+    any_message_t msg;
+    msg.list_entry.mtype = recipient;
+    if(S_or_D=='S'){
+        msg.list_entry.op_code=COMMAND_CODE_LIST_COMPLETE_FOR_SOURCE;
+    }else{
+        msg.list_entry.op_code=COMMAND_CODE_LIST_COMPLETE_FOR_DESTINATION;
+    }
+    //Envoyer message
+    return msgsnd(msg_queue, &msg, sizeof(files_list_entry_transmit_t) - sizeof(long), 0);
 }
 
 /*!
@@ -104,12 +117,12 @@ int send_list_end(int msg_queue, int recipient) {
  * @return the result of msgsnd
  */
 int send_terminate_command(int msg_queue, int recipient) {
-  //Créer message
-  message_t msg;
-  msg.mtype = recipient;
-  msg.cmd_code = TERMINATE_CMD;
-  //Envoyer message
-  return msgsnd(msg_queue, &msg, sizeof(message_t) - sizeof(long), 0);
+    //Créer message
+    any_message_t msg;
+    msg.simple_command.mtype = recipient;
+    msg.simple_command.message = COMMAND_CODE_TERMINATE;
+    //Envoyer message
+    return msgsnd(msg_queue, &msg, sizeof(simple_command_t) - sizeof(long), 0);
 }
 
 /*!
@@ -119,10 +132,10 @@ int send_terminate_command(int msg_queue, int recipient) {
  * @return the result of msgsnd
  */
 int send_terminate_confirm(int msg_queue, int recipient) {
-  //Créer message pour confirmation
-  message_t msg;
-  msg.mtype = recipient;
-  msg.cmd_code = TERMINATE_CONFIRM;
-  //Envoyer message
-  return msgsnd(msg_queue, &msg, sizeof(message_t) - sizeof(long), 0);
+    //Créer message pour confirmation
+    any_message_t msg;
+    msg.simple_command.mtype = recipient;
+    msg.simple_command.message = COMMAND_CODE_TERMINATE_OK;
+    //Envoyer message
+    return msgsnd(msg_queue, &msg, sizeof(simple_command_t) - sizeof(long), 0);
 }
