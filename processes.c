@@ -17,10 +17,16 @@
  */
 int prepare(configuration_t *the_config, process_context_t *p_context) {
     if (the_config!=NULL && the_config->is_parallel==true){
+        if(the_config->is_verbose==true){
+            printf("Creation de la MSQ_Key");
+        }
         p_context->shared_key= ftok("LP25_project",49);
         if (p_context->shared_key==-1){
             printf("Erreur avec la MQKey");
             return -1;
+        }
+        if(the_config->is_verbose==true){
+            printf("Ouverture de la MSQ");
         }
         p_context->message_queue_id=msgget(p_context->shared_key,0666 |IPC_CREAT);
         if (p_context->message_queue_id==-1){
@@ -29,6 +35,9 @@ int prepare(configuration_t *the_config, process_context_t *p_context) {
         }
         p_context->main_process_pid=getpid();
         p_context->processes_count=0;
+        if(the_config->is_verbose==true){
+            printf("Parametrage processus lister_source + mise en place du processus");
+        }
         lister_configuration_t parametres_lister_source;
         parametres_lister_source.my_recipient_id=MSG_TYPE_TO_SOURCE_ANALYZERS;
         parametres_lister_source.my_receiver_id=MSG_TYPE_TO_SOURCE_LISTER;
@@ -36,6 +45,9 @@ int prepare(configuration_t *the_config, process_context_t *p_context) {
         parametres_lister_source.mq_key=p_context->shared_key;
         p_context->source_lister_pid= make_process(p_context,lister_process_loop, &parametres_lister_source);
 
+        if(the_config->is_verbose==true){
+            printf("Parametrage processus analyseur_source + mise en place du/des processus");
+        }
         analyzer_configuration_t parametres_analyseur_source;
         parametres_analyseur_source.my_recipient_id=MSG_TYPE_TO_SOURCE_LISTER;
         parametres_analyseur_source.my_receiver_id=MSG_TYPE_TO_SOURCE_ANALYZERS;
@@ -45,7 +57,9 @@ int prepare(configuration_t *the_config, process_context_t *p_context) {
         for (int i = 0; i < the_config->processes_count; ++i) {
                 p_context->source_analyzers_pids[i]= make_process(p_context,analyzer_process_loop,&parametres_analyseur_source);
         }
-
+        if(the_config->is_verbose==true){
+            printf("Parametrage processus listeur_destination + mise en place du processus");
+        }
         lister_configuration_t parametres_lister_destinataion;
         parametres_lister_destinataion.my_recipient_id=MSG_TYPE_TO_DESTINATION_ANALYZERS;
         parametres_lister_destinataion.my_receiver_id=MSG_TYPE_TO_DESTINATION_LISTER;
@@ -53,6 +67,9 @@ int prepare(configuration_t *the_config, process_context_t *p_context) {
         parametres_lister_destinataion.mq_key=p_context->shared_key;
         p_context->destination_lister_pid= make_process(p_context,lister_process_loop, &parametres_lister_destinataion);
 
+        if(the_config->is_verbose==true){
+            printf("Parametrage processus analyseur_sourcec + mise en place du/des processus");
+        }
         analyzer_configuration_t parametres_analyseur_destination;
         parametres_analyseur_destination.my_recipient_id=MSG_TYPE_TO_DESTINATION_LISTER;
         parametres_analyseur_destination.my_receiver_id=MSG_TYPE_TO_DESTINATION_ANALYZERS;
@@ -171,19 +188,24 @@ void clean_processes(configuration_t *the_config, process_context_t *p_context) 
         if(the_config->is_parallel!=false){
             any_message_t message;
             long nbr_message=0;
+            //Envoie des messages terminaux au processus lister
             send_terminate_command(p_context->message_queue_id,MSG_TYPE_TO_SOURCE_LISTER);
             send_terminate_command(p_context->message_queue_id,MSG_TYPE_TO_DESTINATION_LISTER);
+            //Boucle pour envoie des messages terminaux à tous les processus analyseurs
             for (int i = 0; i < p_context->processes_count; ++i) {
                 send_terminate_command(p_context->message_queue_id,MSG_TYPE_TO_SOURCE_LISTER);
                 send_terminate_command(p_context->message_queue_id,MSG_TYPE_TO_DESTINATION_LISTER);
             }
-            while (nbr_message<p_context->processes_count*2){
+            //Attente de reception de tous les messages de confirmation de fermeture
+            while (nbr_message<(p_context->processes_count*2)+2){
                 if(msgrcv(p_context->message_queue_id,&message, sizeof(any_message_t)- sizeof(long),MSG_TYPE_TO_MAIN,0)!=-1){
                     ++nbr_message;
                 }
             }
+            //Liberation de la mémoire
             free(p_context->source_analyzers_pids);
             free(p_context->destination_analyzers_pids);
+            //Fermeture de la MSQ
             msgctl(p_context->message_queue_id,IPC_RMID,NULL);
         }
     }else{
