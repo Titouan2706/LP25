@@ -6,7 +6,11 @@
 #include <stdio.h>
 #include <main.c>
 
-extern configuration_t my_config;
+
+
+
+extern configuration_t my_config; // Variable externe pour gestion de l'option verbeuse
+
 
 /*!
  * @brief clear_files_list clears a files list
@@ -85,7 +89,7 @@ files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
     }
     if (my_config.is_verbose == true) { // Explications si option verbeuse activée
         printf("Entry successfully added to tail\n");
-        display_files_list(list);
+        display_files_list(list); // Affichage de la liste de fichiers
     }
     return new_entry; // operation réussie
 }
@@ -117,7 +121,7 @@ int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
     }
     if (my_config.is_verbose == true) { // Explications si option verbeuse activée
         printf("Entry successfully added to tail\n");
-        display_files_list(list);
+        display_files_list(list); // Affichage de la liste de fichiers
     }
     return 0; // Opération réussie
 }

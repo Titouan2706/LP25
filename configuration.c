@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 
+
+
+
 typedef enum {DATE_SIZE_ONLY, NO_PARALLEL, DRY_RUN} long_opt_values;
 
 
@@ -88,7 +91,7 @@ int set_configuration(configuration_t *the_config, int argc, char *argv[]) {
             }
         }
         if (the_config->is_verbose == true) {
-            printf("Initialisation process succeed\n");
+            printf("Initialisation process is a success\n");
         }
         return 0; // Execution finie et pas d'erreur rencontrées
     }
