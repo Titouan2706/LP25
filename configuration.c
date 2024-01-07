@@ -64,13 +64,16 @@ int set_configuration(configuration_t *the_config, int argc, char *argv[]) {
                     {0, 0, 0, 0} // ligne obligatoire pour getopt_long
             };
 
-            while ((opt = getopt_long(argc, argv, "n:v", long_options, NULL)) != -1) { // Verifie qu'il reste des arguments à analyser
+            while ((opt = getopt_long(argc, argv, "n:vh", long_options, NULL)) != -1) { // Verifie qu'il reste des arguments à analyser
                 switch (opt) { // en fonction des options
                     case 'n': // -n <nombre> : nombre de processus
                         the_config->processes_count = atoi(optarg);
                         break;
                     case 'v': // verbeux
                         the_config->is_verbose = true;
+                        break;
+                    case 'h': // fonction d'aide
+                        display_help("lp25-backup");
                         break;
                     case DRY_RUN:
                         the_config->is_dry_run = true;
