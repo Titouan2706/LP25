@@ -35,7 +35,7 @@ int get_file_stats(files_list_entry_t *entry) {
         stat(pointeur->path_and_name, &buffer_type);
 
         if (&buffer_type != NULL) {                         //Si erreur avec le fichier dans le buffer
-            printf("Error getting file stats");
+            printf("Error getting file stats.\n");
             return -1;
         } else {
             if (S_ISREG(buffer_type.st_mode)) {             //Si le fichier est un fichier ordinaire
@@ -43,6 +43,7 @@ int get_file_stats(files_list_entry_t *entry) {
                 pointeur->entry_type = FICHIER;
 
                 //Métadonnées fichier
+                pointeur->mtime.tv_sec = buffer_type.st_mtim.tv_sec;
                 pointeur->mtime.tv_nsec = buffer_type.st_mtim.tv_nsec;
                 pointeur->size = buffer_type.st_size;
 
@@ -88,6 +89,8 @@ int compute_file_md5(files_list_entry_t *entry) {
         printf("Error opening file for MD5 calculation");
         return -1;
     }
+
+    char *md5sum;
 
     EVP_MD_CTX *mdctx;
     const EVP_MD *md;
@@ -144,9 +147,6 @@ bool directory_exists(char *path_to_dir) {
     } else {
         //Le répertoire n'existe pas
 
-        //Fermeture du répertoire (à ne pas oublier !)
-        closedir(directory);
-
         return false;
     }
 }
@@ -164,7 +164,7 @@ bool is_directory_writable(char *path_to_dir) {
 
     //Définition du fichier à ouvrir
     struct dirent *entry;
-    char chemin_abs_fichier [255];
+    char chemin_abs_fichier[4096];
 
     bool sur_fichier_exploitable = false;
     while (! sur_fichier_exploitable) {
@@ -195,7 +195,7 @@ bool is_directory_writable(char *path_to_dir) {
     }
 
     // Ouvrir ce fichier
-    FILE *file = fopen(chemin_abs_fichier, "r");
+    FILE *file = fopen(chemin_abs_fichier, "w");
 
     // Vérification de si l'ouverture a réussi
     if (file == NULL) {

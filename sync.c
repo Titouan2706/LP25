@@ -13,9 +13,10 @@
 
 #include <stdio.h>
 
-//Bibliothèques rajoutées pour pouvoir utiliser free() et utiliser les structures de mtime
+//Bibliothèques rajoutées pour pouvoir utiliser free() et utiliser les structures de mtime et utiliser l'attente wait()
 #include <stdlib.h>
 #include <utime.h>
+#include <sys/wait.h>
 
 #define MAX_PATH_SIZE 5121
 //Calculée selon la taille des différents string : 1024+1+4096
@@ -30,23 +31,23 @@
  */
 void synchronize(configuration_t *the_config, process_context_t *p_context) {
     //1&2 - Construction listes source et destination
-    files_list_t *source_list, *dest_list;
+    files_list_t source_list, dest_list;
 
     if (! the_config->is_parallel) {
         //Si mode parallèle désactivé
-        make_files_list(source_list, the_config->source);
-        make_files_list(dest_list, the_config->destination);
+        make_files_list(&source_list, the_config->source);
+        make_files_list(&dest_list, the_config->destination);
     } else {
         //Si mode parallèle activé
-        make_files_lists_parallel(source_list, dest_list, the_config, p_context->message_queue_id);
+        make_files_lists_parallel(&source_list, &dest_list, the_config, p_context->message_queue_id);
     }
 
     //3 - Vérification des différences : parcourir la liste des sources et synchroniser les fichiers
-    files_list_entry_t *current_entry = source_list->head;
+    files_list_entry_t *current_entry = source_list.head;
     files_list_entry_t *current_dest; //= dest_list.head;  Définie autrement après
     while (current_entry != NULL) {
         // Trouver l'entrée correspondante dans la liste de destination
-        files_list_entry_t *current_dest = find_entry_by_name(dest_list, current_entry->path_and_name, 0 ,0);
+        files_list_entry_t *current_dest = find_entry_by_name(&dest_list, current_entry->path_and_name, 0 ,0);
 
         if (current_dest == NULL) {
             //Si l'entrée n'existe pas dans la liste de destination, copier le fichier
@@ -59,6 +60,33 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
         }
 
         current_entry = current_entry->next;
+    }
+
+    //Libération des listes créées
+    if (&source_list != NULL) {
+        // Libérer la mémoire pour chaque entrée de la liste
+        files_list_entry_t *current = source_list.head;
+        while (current != NULL) {
+            files_list_entry_t *next = current->next;
+            free(current);
+            current = next;
+        }
+
+        // Libérer la mémoire pour la structure de la liste
+        free(&source_list);
+    }
+
+    if (&dest_list != NULL) {
+        // Libérer la mémoire pour chaque entrée de la liste
+        files_list_entry_t *current = dest_list.head;
+        while (current != NULL) {
+            files_list_entry_t *next = current->next;
+            free(current);
+            current = next;
+        }
+
+        // Libérer la mémoire pour la structure de la liste
+        free(&dest_list);
     }
 }
 
@@ -82,24 +110,16 @@ bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, bool has_md5) {
         files_list_entry_t *pointeur_r = rhd;
 
         while ((pointeur_l != NULL) && (pointeur_r != NULL)) {
-            retour_erreurs = get_file_stats(pointeur_l);
-            retour_erreurs += get_file_stats(pointeur_r);
-
-            if (retour_erreurs != 0) {                       //Vérification pas erreur par fonctions get_file_stats
-                printf("Error : the building of stats files failed.");
-                return true;
-            } else {
-                //Vérification de chacun des attributs et comparaison + enregistrement das etat_comparaison (booléen utilisant le connecteur et associé à l'addition).
-                etat_comparaison += !(pointeur_l->entry_type == pointeur_r->entry_type);
-                etat_comparaison += !(pointeur_l->mode == pointeur_r->mode);
-                etat_comparaison += !(pointeur_l->mtime.tv_nsec == pointeur_r->mtime.tv_nsec);
-                etat_comparaison += !(pointeur_l->size == pointeur_r->size);
-                if (has_md5) {
-                    etat_comparaison += !(pointeur_l->md5sum == pointeur_r->md5sum);
-                }
-
-                return etat_comparaison;
+            //Vérification de chacun des attributs et comparaison + enregistrement dans etat_comparaison (booléen utilisant le connecteur "et" associé à l'addition).
+            etat_comparaison += !(pointeur_l->entry_type == pointeur_r->entry_type);
+            etat_comparaison += !(pointeur_l->mode == pointeur_r->mode);
+            etat_comparaison += !(pointeur_l->mtime.tv_nsec == pointeur_r->mtime.tv_nsec);
+            etat_comparaison += !(pointeur_l->size == pointeur_r->size);
+            if (has_md5) {
+                etat_comparaison += !(pointeur_l->md5sum == pointeur_r->md5sum);
             }
+
+            return etat_comparaison;
         }
     }
 }
@@ -120,7 +140,8 @@ void make_files_list(files_list_t *list, char *target_path) {
     while ((entry = get_next_entry(directory)) != NULL) {
         // Construire le chemin complet du fichier
         char file_path[4096];
-        snprintf(file_path, sizeof(file_path), "%s/%s", target_path, entry->d_name);
+        //snprintf(file_path, sizeof(file_path), "%s/%s", target_path, entry->d_name);
+        concat_path(file_path, target_path, entry->d_name);
 
         // Obtenir les stats sur le fichier
         struct stat file_stat;
@@ -162,6 +183,14 @@ void make_files_list(files_list_t *list, char *target_path) {
         // Ajouter la nouvelle entrée fichier à la liste doublement chaînée
         if (list == NULL) {
             //Si la liste est vide
+
+            // Allouer de la mémoire pour la liste
+            list = malloc(sizeof(files_list_t));
+            if (list == NULL) {
+                // La allocation a échoué, gérer l'erreur
+                printf("Erreur d'allocation mémoire pour la liste.");
+            }
+
             list->head = new_entry;
             list->tail = new_entry;
             new_entry->prev = NULL;
@@ -187,11 +216,41 @@ void make_files_list(files_list_t *list, char *target_path) {
  * @param msg_queue is the id of the MQ used for communication
  */
 void make_files_lists_parallel(files_list_t *src_list, files_list_t *dst_list, configuration_t *the_config, int msg_queue) {
+    if (the_config->is_parallel) {
+        // Préparer les processus
+        process_context_t p_context;
+        if (prepare(the_config, &p_context) == -1) {
+            printf("Erreur lors de la préparation des processus.\n");
+            exit(EXIT_FAILURE);
+        }
 
-    //A RETRAITER AVEC LES FONCTIONS DE PROCESSUS
+        // Créer un processus pour la liste source
+        pid_t src_pid = fork();
+        if (src_pid == -1) {
+            printf("Erreur lors de la création du processus pour la liste source.\n");
+            exit(EXIT_FAILURE);
+        } else if (src_pid == 0) {  // Processus fils
+            make_files_list(src_list, the_config->source);
+            exit(EXIT_SUCCESS);
+        }
 
-    make_files_list(src_list, the_config->source);
-    make_files_list(dst_list, the_config->destination);
+        // Créer un processus pour la liste destination
+        pid_t dst_pid = fork();
+        if (dst_pid == -1) {
+            perror("Erreur lors de la création du processus pour la liste destination.\n");
+            exit(EXIT_FAILURE);
+        } else if (dst_pid == 0) {  // Processus fils
+            make_files_list(dst_list, the_config->destination);
+            exit(EXIT_SUCCESS);
+        }
+
+        // Attendre la fin des processus fils
+        waitpid(src_pid, NULL, 0);
+        waitpid(dst_pid, NULL, 0);
+
+        // Nettoyer les processus à la fin de l'execution
+        clean_processes(the_config, &p_context);
+    }
 }
 
 
@@ -219,10 +278,23 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
         //Création d'un répertoire dans la destination
         int retour_mkdir = mkdir(destination_path, source_entry->mode);
 
+        //Vérification de la bonne création
         if (retour_mkdir == -1) {
             printf("Erreur lors de la création du répertoire copie.");
             return;
         }
+
+        //Réattribution des mêmes droits
+        if (chmod(destination_path, buffer_type.st_mode) == -1) {
+            printf("Erreur lors de l'attribution des permissions au répertoire en destination.\n");
+            return;
+        }
+
+        if (chown(destination_path, buffer_type.st_uid, buffer_type.st_gid) == -1) {
+            printf("Erreur lors de l'attribution du propriétaire et du groupe au répertoire en destination.\n");
+            return;
+        }
+
     } else if (S_ISREG(buffer_type.st_mode)) {       //Le fichier est un fichier ordinaire
         //Ouverture du fichier source
         FILE *source_file = fopen(source_path, "rb");
@@ -240,10 +312,16 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
         }
 
         //Copiage du contenu du fichier source dans le fichier de destination
+        /*
         int caract;
         while ((caract = fgetc(source_file)) != EOF) {
             fputc(caract, destination_file);
         }
+        */
+        if (sendfile(destination_file, source_file, NULL, buffer_type.st_size) == -1) {
+            printf("Erreur lors de la copie des données avec sendfile.\n");
+        }
+
 
         //Modification du mtime dans la destination
         struct utimbuf utime_buf;
@@ -312,6 +390,11 @@ struct dirent *get_next_entry(DIR *dir) {
 
     do {
         fichier_entree = readdir(dir);
+
+        //Si fin du répertoire
+        if (fichier_entree == NULL) {
+            return NULL;
+        }
 
         stat(fichier_entree->d_name, &buffer_type);
         if (&buffer_type != NULL) {                         //Si erreur avec le fichier dans le buffer
