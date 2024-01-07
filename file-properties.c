@@ -35,7 +35,7 @@ int get_file_stats(files_list_entry_t *entry) {
         stat(pointeur->path_and_name, &buffer_type);
 
         if (&buffer_type != NULL) {                         //Si erreur avec le fichier dans le buffer
-            printf("Error getting file stats");
+            printf("Error getting file stats.\n");
             return -1;
         } else {
             if (S_ISREG(buffer_type.st_mode)) {             //Si le fichier est un fichier ordinaire
@@ -43,7 +43,9 @@ int get_file_stats(files_list_entry_t *entry) {
                 pointeur->entry_type = FICHIER;
 
                 //Métadonnées fichier
-                pointeur->mtime.tv_nsec = buffer_type.st_mtimensec;
+                pointeur->mtime.tv_sec = buffer_type.st_mtim.tv_sec;
+                pointeur->mtime.tv_nsec = buffer_type.st_mtim.tv_nsec;
+
                 pointeur->size = buffer_type.st_size;
 
                 //Permissions fichier
@@ -88,6 +90,8 @@ int compute_file_md5(files_list_entry_t *entry) {
         printf("Error opening file for MD5 calculation");
         return -1;
     }
+
+    char *md5sum;
 
     EVP_MD_CTX *mdctx;
     const EVP_MD *md;
@@ -145,9 +149,6 @@ bool directory_exists(char *path_to_dir) {
     } else {
         //Le répertoire n'existe pas
 
-        //Fermeture du répertoire (à ne pas oublier !)
-        closedir(directory);
-
         return false;
     }
 }
@@ -161,11 +162,11 @@ bool directory_exists(char *path_to_dir) {
  */
 bool is_directory_writable(char *path_to_dir) {
 
-    DIR *directory = opendir(path_to_dir); // Ouvre le dossier spécifié
-    if (directory == NULL) {
-        perror("Error opening directory");
-        return false;
-    }
+
+    //Définition du fichier à ouvrir
+    struct dirent *entry;
+    char chemin_abs_fichier[4096];
+
 
     struct dirent *entry; // Variables nécessaires au bon fonctionnement de la fonction
     char chemin_abs_fichier[255];
@@ -197,6 +198,19 @@ bool is_directory_writable(char *path_to_dir) {
             sur_fichier_exploitable = true;
         }
     }
+
+
+    // Ouvrir ce fichier
+    FILE *file = fopen(chemin_abs_fichier, "w");
+
+    // Vérification de si l'ouverture a réussi
+    if (file == NULL) {
+        //Le fichier n'est pas rédigeable, donc le répertoire n'est pas en mode writable
+
+        //Fermeture du ficher (à ne pas oublier !)
+        fclose(file);
+        //Fermeture du répertoire (à ne pas oublier aussi !)
+        closedir(directory);
 
 
     closedir(directory); // Fermeture du répertoire ouvert
