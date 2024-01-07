@@ -4,12 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <main.c>
+//#include <main.c>
 
 
 
 
-extern configuration_t my_config; // Variable externe pour gestion de l'option verbeuse
+//extern configuration_t my_config; // Variable externe pour gestion de l'option verbeuse
 
 
 /*!
@@ -37,18 +37,18 @@ void clear_files_list(files_list_t *list) {
  */
 files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
     if (list == NULL || file_path == NULL) { // Test de la validité des paramètres
-        if (my_config.is_verbose == true) {
+        /*if (my_config.is_verbose == true) {
             printf("ERROR: Invalid parameters\n");
-        }
+        }*/
         return NULL; // Paramètres passés invalides
     }
 
     files_list_entry_t *existing_entry = list->head; // Variable temporaire pour le test d'existence du fichier dans la liste
     while (existing_entry != NULL) {
         if (strcmp(existing_entry->path_and_name, file_path) == 0) { // Vérifie si les deux paramètres sont identiques
-            if (my_config.is_verbose == true) {
+            /*if (my_config.is_verbose == true) {
                 printf("File already exists, do nothing\n");
-            }
+            }*/
             return NULL; // Le fichier existe déja, donc on ne fait rien
         }
         existing_entry = existing_entry->next; // Incrémentation de la variable de parcours
@@ -56,9 +56,9 @@ files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
 
     files_list_entry_t *new_entry = malloc(sizeof(files_list_entry_t)); // Créer une nouvelle entrée temporaire (parcours de la liste)
     if (new_entry == NULL) {
-        if (my_config.is_verbose == true) {
+        /*if (my_config.is_verbose == true) {
             printf("ERROR: Memory allocation issue, exiting\n");
-        }
+        }*/
         return NULL; // Erreur d'allocation donc sortie de fonction
     }
 
@@ -87,10 +87,10 @@ files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
         }
         temp->prev = new_entry;
     }
-    if (my_config.is_verbose == true) { // Explications si option verbeuse activée
+    /*if (my_config.is_verbose == true) { // Explications si option verbeuse activée
         printf("Entry successfully added to tail\n");
         display_files_list(list); // Affichage de la liste de fichiers
-    }
+    }*/
     return new_entry; // operation réussie
 }
 
@@ -105,9 +105,9 @@ files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
  */
 int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
     if (list == NULL || entry == NULL) { // Verifie validité des arguments
-        if (my_config.is_verbose == true) { // Explications si option verbeuse activée
+        /*if (my_config.is_verbose == true) { // Explications si option verbeuse activée
             printf("ERROR: Invalid parameters\n");
-        }
+        }*/
         return -1; // Si paramètres invalides
     }
 
@@ -119,10 +119,10 @@ int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
         list->tail->next = entry; // L'élément en queue actuelle pointe sur la nouvelle queue de liste
         list->tail = entry; // Ajout du chemin vers la "nouvelle" queue
     }
-    if (my_config.is_verbose == true) { // Explications si option verbeuse activée
+    /*if (my_config.is_verbose == true) { // Explications si option verbeuse activée
         printf("Entry successfully added to tail\n");
         display_files_list(list); // Affichage de la liste de fichiers
-    }
+    }*/
     return 0; // Opération réussie
 }
 
@@ -138,9 +138,9 @@ int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
  */
 files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path, size_t start_of_src, size_t start_of_dest) {
     if (list == NULL || file_path == NULL) { // Vérifie la validité des paramètres
-        if (my_config.is_verbose == true) { // Explications si option verbeuse activée
+        /*if (my_config.is_verbose == true) { // Explications si option verbeuse activée
             printf("ERROR: Invalid parameters\n");
-        }
+        }*/
         return NULL; // Paramètres invalides
     }
 
@@ -163,17 +163,17 @@ files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path, size
         }
 
         if (i - start_of_src == file_path_length - start_of_dest) { // Vérifie si on a atteind la fin du chemin ou si deux caractères sont différents
-            if (my_config.is_verbose == true) { // Explications si option verbeuse activée
+            /*if (my_config.is_verbose == true) { // Explications si option verbeuse activée
                 printf("Element found in list\n");
-            }
+            }*/
             return temp; // Les éléments correspondent, on retourne un pointeur sur l'élément
         }
 
         temp = temp->next; // Si la comparaison retourne un résultat pas concluant, passe au prochain élément de la liste
     }
-    if (my_config.is_verbose == true) { // Explications si option verbeuse activée
+    /*if (my_config.is_verbose == true) { // Explications si option verbeuse activée
         printf("Element not found in list\n");
-    }
+    }*/
     return NULL; // Entrée ne correspond à aucun élément de la liste
 }
 
