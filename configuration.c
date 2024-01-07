@@ -12,6 +12,8 @@
 typedef enum {DATE_SIZE_ONLY, NO_PARALLEL, DRY_RUN} long_opt_values;
 
 
+typedef struct valgrind valgrind;
+
 /*!
  * @brief function display_help displays a brief manual for the program usage
  * @param my_name is the name of the binary file
@@ -95,6 +97,7 @@ int set_configuration(configuration_t *the_config, int argc, char *argv[]) {
         }
         if (the_config->is_verbose == true) {
             printf("Initialisation process is a success\n");
+
         }
         return 0; // Execution finie et pas d'erreur rencontrées
     }
