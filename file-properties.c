@@ -170,7 +170,7 @@ bool is_directory_writable(char *path_to_dir) {
         return false;
     }
     struct dirent *entry;
-    char chemin_abs_fichier[255];
+    char chemin_abs_fichier[4096];
 
 
     bool sur_fichier_exploitable = false;
