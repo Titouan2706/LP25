@@ -42,6 +42,7 @@ int get_file_stats(files_list_entry_t *entry) {
                 // Type du fichier
                 pointeur->entry_type = FICHIER;
 
+
                 //Métadonnées fichier
                 pointeur->mtime.tv_nsec = buffer_type.st_mtimensec;
                 pointeur->size = buffer_type.st_size;
