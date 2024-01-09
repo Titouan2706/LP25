@@ -44,8 +44,7 @@ int get_file_stats(files_list_entry_t *entry) {
 
 
                 //Métadonnées fichier
-                pointeur->mtime.tv_sec = buffer_type.st_mtim.tv_sec;
-                pointeur->mtime.tv_nsec = buffer_type.st_mtim.tv_nsec;
+                pointeur->mtime.tv_nsec = buffer_type.st_mtimensec;
 
                 pointeur->size = buffer_type.st_size;
 
@@ -165,12 +164,15 @@ bool is_directory_writable(char *path_to_dir) {
 
 
     //Définition du fichier à ouvrir
+    DIR *directory = opendir(path_to_dir); // Ouvre le dossier spécifié
+    if (directory == NULL) {
+        perror("Error opening directory");
+        return false;
+    }
     struct dirent *entry;
-    char chemin_abs_fichier[4096];
-
-
-    struct dirent *entry; // Variables nécessaires au bon fonctionnement de la fonction
     char chemin_abs_fichier[255];
+
+
     bool sur_fichier_exploitable = false;
 
     while (!sur_fichier_exploitable) {
@@ -182,11 +184,13 @@ bool is_directory_writable(char *path_to_dir) {
         }
 
 
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) { // On ignore les dossiers spéciaux "." and ".."
+        if (strcmp(entry->d_name, ".") == 0 ||
+            strcmp(entry->d_name, "..") == 0) { // On ignore les dossiers spéciaux "." and ".."
             continue;
         }
 
-        snprintf(chemin_abs_fichier, sizeof(chemin_abs_fichier), "%s/%s", path_to_dir, entry->d_name); // Construction du chemin absolu
+        snprintf(chemin_abs_fichier, sizeof(chemin_abs_fichier), "%s/%s", path_to_dir,
+                 entry->d_name); // Construction du chemin absolu
 
         struct stat file_stat;
         if (stat(chemin_abs_fichier, &file_stat) != 0) { // Appel de stat pour obtenir des informations
@@ -214,7 +218,9 @@ bool is_directory_writable(char *path_to_dir) {
         closedir(directory);
 
 
-    closedir(directory); // Fermeture du répertoire ouvert
+        closedir(directory); // Fermeture du répertoire ouvert
 
+
+    }
     return sur_fichier_exploitable;
 }
